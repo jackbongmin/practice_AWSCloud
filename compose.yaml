@@ -1,0 +1,8 @@
+# 11_01: 앱 컨테이너 하나. 서버가 켜지면 같이 켜지고, 죽으면 다시 뜬다
+services:
+  app:
+    build: .
+    env_file: app.env
+    ports:
+      - "8080:8080"
+    restart: unless-stopped

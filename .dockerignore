@@ -1,0 +1,6 @@
+# 이미지를 만들 때 상자 안으로 보내지 않을 것
+.git
+.gradle
+build
+app.env
+frontend
