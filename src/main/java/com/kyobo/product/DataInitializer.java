@@ -17,6 +17,10 @@ public class DataInitializer implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) {
+		// 11_03: RDS처럼 데이터가 남는 DB에서는 이미 있으면 넣지 않는다 (안 그러면 재시작마다 8개씩 늘어난다)
+		if (products.count() > 0) {
+			return;
+		}
 		products.saveAll(List.of(
 				new Product("펜", 1000, 10),
 				new Product("펜", 1500, 5),

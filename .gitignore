@@ -42,5 +42,7 @@ app.env
 ### 11_02: 화면 빌드 결과·패키지 ###
 node_modules/
 frontend/dist/
-*.pem
+
+### 11_02: server-a에만 두는 HTTPS 설정(도메인) ###
 .env
+*.pem

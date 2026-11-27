@@ -1,8 +1,32 @@
-# 11_01: 앱 컨테이너 하나. 서버가 켜지면 같이 켜지고, 죽으면 다시 뜬다
+# 11_02: 문지기(Traefik) 하나가 80번으로 받아서 주소 앞부분을 보고 나눠 준다
+#   /product…, /actuator…  → app (Spring, 8080)
+#   그 밖의 주소           → web (React 빌드 결과를 nginx가 내준다)
 services:
+  traefik:
+    image: traefik:v3.6
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false   # 라벨을 붙인 컨테이너만 연결
+      - --entrypoints.web.address=:80
+    ports:
+      - "80:80"
+    volumes:
+      # Traefik이 컨테이너 목록·라벨을 읽는 통로. 읽기 전용이지만 강한 권한이다 — 이 컨테이너만 연결한다
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+
   app:
     build: .
     env_file: app.env
-    ports:
-      - "8080:8080"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.app.rule=PathPrefix(`/product`) || PathPrefix(`/actuator`)
+      - traefik.http.services.app.loadbalancer.server.port=8080
+    restart: unless-stopped
+
+  web:
+    build: ./frontend   # frontend/Dockerfile: Node로 빌드 → nginx에 dist만 담는다
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.web.rule=PathPrefix(`/`)
     restart: unless-stopped

@@ -1,0 +1,33 @@
+# 11_02 HTTPS — server-a에만. compose.yaml 위에 겹쳐 쓴다.
+#   server-a의 .env(git 밖)에 COMPOSE_FILE=compose.yaml:compose.https.yaml 과 DOMAIN=내이름.duckdns.org
+#   → 그냥 `docker compose up -d`가 두 파일을 합친다. server-b에는 .env가 없으니 compose.yaml만.
+# 인증서: Traefik이 Let's Encrypt에서 자동으로 받는다(TLS-ALPN 방식 — 443만 열려 있으면 된다).
+services:
+  traefik:
+    command:   # compose.yaml의 command를 통째로 바꾼다(목록은 합쳐지지 않는다) — 위 세 줄은 같다
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.asdefault=true                      # entrypoints를 안 적은 길(app, web)은 80에만
+      - --entrypoints.websecure.address=:443
+      - --certificatesresolvers.le.acme.tlschallenge=true     # 443으로 "이 이름의 주인" 확인
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+    ports:
+      - "443:443"                                             # compose.yaml의 80에 더해진다
+    volumes:
+      - letsencrypt:/letsencrypt                              # 받은 인증서 — 다시 띄워도 새로 받지 않게
+
+  app:
+    labels:
+      - traefik.http.routers.app-https.rule=Host(`${DOMAIN}`) && (PathPrefix(`/product`) || PathPrefix(`/actuator`))
+      - traefik.http.routers.app-https.entrypoints=websecure
+      - traefik.http.routers.app-https.tls.certresolver=le
+
+  web:
+    labels:
+      - traefik.http.routers.web-https.rule=Host(`${DOMAIN}`)
+      - traefik.http.routers.web-https.entrypoints=websecure
+      - traefik.http.routers.web-https.tls.certresolver=le
+
+volumes:
+  letsencrypt:
